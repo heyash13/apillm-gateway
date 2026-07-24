@@ -35,17 +35,9 @@ flowchart TD
 
 ---
 
-## **Telemetry Command Center UI**
+## **Video Demo**
 
-Below is a live walkthrough and interface view of the Apillm Gateway admin dashboard during execution:
-
-### **Live Interactive Walkthrough**
-Here is a screen recording demonstrating real-time logs, security filter redactions, and cache hit metrics increments:
-
-<img src="./assets/dashboard_walkthrough.webp" alt="Apillm Gateway Walkthrough" width="100%">
-
-### **Visual Telemetry Overview**
-<img src="./assets/dashboard_screenshot.png" alt="Apillm Gateway Dashboard" width="100%">
+<img src="./assets/dashboard_walkthrough.webp" alt="Apillm Gateway Video Demo" width="100%">
 
 ---
 

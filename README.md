@@ -49,30 +49,6 @@ Here is a screen recording demonstrating real-time logs, security filter redacti
 
 ---
 
-## **Project Structure**
-
-```text
-apillm-gateway/
-├── dashboard/
-│   └── index.html          # HTML5 Glassmorphism dashboard interface
-├── apillm/
-│   ├── __init__.py
-│   ├── auth.py             # Client keys validation & rate limits
-│   ├── cache.py            # SQLite caching logic
-│   ├── config.py           # Config loader (reads config.json)
-│   ├── logger.py           # Metrics aggregation & audit trail
-│   ├── proxy.py            # Core FastAPI server & telemetry APIs
-│   └── scrubber.py         # Regex PII scrubbing engine
-├── config.json             # Central configuration panel
-├── mock_provider.py        # Mock OpenAI-compatible LLM provider
-├── run.py                  # Environment setup & server launcher
-├── test_suite.py           # Integration test suite
-├── requirements.txt        # Third-party dependencies
-└── .gitignore              # Ignored local logs, databases & environments
-```
-
----
-
 ## **Getting Started**
 
 ### **Prerequisites**
@@ -112,6 +88,67 @@ We provide an automated verification suite to test authorization, PII filtering,
 # Run tests inside the virtualenv environment
 .venv/bin/python test_suite.py
 ```
+
+---
+
+## **Enterprise Integration & Deployment Guide**
+
+Integrating Apillm Gateway into a corporate organization follows this structured sequence:
+
+### **Step 1: Containerization**
+Build the Apillm container image locally or deploy it to a private container registry (e.g., AWS ECR or Docker Hub):
+
+```bash
+# Build the Docker image
+docker build -t apillm-gateway:latest .
+
+# Run the container locally
+docker run -d -p 8090:8090 \
+  -v $(pwd)/config.json:/app/config.json \
+  -v $(pwd)/apillm_cache.db:/app/apillm_cache.db \
+  apillm-gateway:latest
+```
+
+### **Step 2: Deployment Topologies**
+- **Central API Gateway (Recommended)**: Deploy Apillm in a central cluster (e.g. AWS EKS) and assign an internal DNS domain name like `apillm.internal.company.com`. All corporate microservices target this central endpoint.
+- **Sidecar Pattern (Kubernetes)**: Run the Apillm Gateway as a sidecar container inside the same pod as your LLM consuming microservice. Direct the microservice's SDK to `localhost:8090`.
+
+### **Step 3: Secure Upstream Configurations**
+Instead of hardcoding API keys in `config.json`, configure the upstream settings using environmental variables injected by Kubernetes Secrets or HashiCorp Vault. Update the proxy to load upstream keys using environment variable strings.
+
+### **Step 4: Client Code Integration**
+Apillm matches standard OpenAI SDK expectations. Developers configure their LLM libraries to query the proxy gateway URL using the client key mapped to their microservice:
+
+#### **Python (OpenAI SDK)**
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://apillm.internal.company.com:8090/v1",
+    api_key="sg-client-dev-key-xyz" # Mapped in config.json
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Query payload here..."}]
+)
+```
+
+#### **Node.js (OpenAI SDK)**
+```javascript
+const { OpenAI } = require("openai");
+
+const openai = new OpenAI({
+  baseURL: "http://apillm.internal.company.com:8090/v1",
+  apiKey: "sg-client-dev-key-xyz"
+});
+```
+
+### **Step 5: Audit Log Monitoring & SIEM Ingestion**
+The gateway writes structured JSON logs into `apillm_audit.jsonl`.
+- Set up a log collector agent (like Vector, Datadog Agent, or FluentBit) to tail the audit log file.
+- Forward logs to your company's central SIEM/monitoring service (e.g., Splunk, Elasticsearch, Datadog, or Grafana Loki).
+- Build alerts based on HTTP status 429 triggers (developer API abuse) or high rates of PII redactions.
 
 ---
 

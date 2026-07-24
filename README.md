@@ -42,10 +42,10 @@ Below is a live walkthrough and interface view of the Apillm Gateway admin dashb
 ### **Live Interactive Walkthrough**
 Here is a screen recording demonstrating real-time logs, security filter redactions, and cache hit metrics increments:
 
-![Apillm Gateway Walkthrough](assets/dashboard_walkthrough.webp)
+![Apillm Gateway Walkthrough](./assets/dashboard_walkthrough.webp)
 
 ### **Visual Telemetry Overview**
-![Apillm Gateway Dashboard](assets/dashboard_screenshot.png)
+![Apillm Gateway Dashboard](./assets/dashboard_screenshot.png)
 
 ---
 

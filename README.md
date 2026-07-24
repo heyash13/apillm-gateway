@@ -47,39 +47,40 @@ flowchart TD
 - **Python 3.10+** (Recommended)
 - **pip** package installer
 
-### **Quickstart Setup**
-The simplest way to spin up the entire Apillm ecosystem is using the auto-setup launcher script. This script automatically handles Python virtual environment creation, dependencies installation (FastAPI, Uvicorn, Requests), and launches both the gateway and a mock LLM provider:
+### **Installation & Setup**
 
-```bash
-# Clone the repository (or copy folders)
-cd apillm-gateway
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-# Start servers
-python3 run.py
-```
+2. **Configure Upstream LLM Endpoints**:
+   Open `config.json` and configure your organization's active LLM endpoints (e.g. OpenAI production URLs, Azure OpenAI, custom deployments) and their respective API access keys under the `upstream.providers` key:
+   ```json
+   "upstream": {
+     "default_provider": "openai-prod",
+     "fallback_provider": "claude-fallback",
+     "providers": {
+       "openai-prod": {
+         "url": "https://api.openai.com/v1/chat/completions",
+         "api_key": "sk-proj-your-openai-key"
+       },
+       "claude-fallback": {
+         "url": "https://api.anthropic.com/v1/messages",
+         "api_key": "sk-ant-your-anthropic-key"
+       }
+     }
+   }
+   ```
 
-Upon a successful launch, you will see output like:
-```text
-============================================================
- Apillm Gateway Sentinel is fully operational!
-  - Gateway Endpoint:  http://127.0.0.1:8090/v1/chat/completions
-  - Admin Dashboard:   http://127.0.0.1:8090/dashboard
-  - Upstream Provider: http://127.0.0.1:8095/v1/chat/completions
-============================================================
-```
+3. **Start the Gateway Proxy**:
+   Run the FastAPI proxy server using `uvicorn`:
+   ```bash
+   uvicorn apillm.proxy:app --host 0.0.0.0 --port 8090
+   ```
 
-To view metrics, navigate your browser to **[http://127.0.0.1:8090/dashboard](http://127.0.0.1:8090/dashboard)**.
-
----
-
-## **Running Integration Tests**
-
-We provide an automated verification suite to test authorization, PII filtering, caching, rate-limit headers, upstream failovers, and telemetry API:
-
-```bash
-# Run tests inside the virtualenv environment
-.venv/bin/python test_suite.py
-```
+4. **Verify Telemetry Command Center**:
+   Open your browser to `http://127.0.0.1:8090/dashboard` to monitor token metrics, cost savings, and redact incidents in real-time.
 
 ---
 

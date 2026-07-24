@@ -13,9 +13,9 @@ ENV/
 Thumbs.db
 
 # Project-specific database, logs, and stats
-shieldguard_cache.db
-shieldguard_audit.jsonl
-shieldguard_stats.json
+apillm_cache.db
+apillm_audit.jsonl
+apillm_stats.json
 
 # IDE config folders
 .idea/

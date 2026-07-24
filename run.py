@@ -2,7 +2,6 @@ import os
 import subprocess
 import sys
 import time
-import signal
 
 def setup_environment():
     print("[*] Apillm Gateway: Checking Environment...")
@@ -29,27 +28,10 @@ def setup_environment():
     return python_path
 
 def main():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
     python_path = setup_environment()
     
-    # Paths to files
-    mock_provider_path = os.path.join(base_dir, "mock_provider.py")
-    
-    # Run processes
-    processes = []
-    
     try:
-        # 1. Start Upstream Mock LLM API
-        print("[*] Starting Upstream Mock LLM API on port 8095...")
-        provider_proc = subprocess.Popen(
-            [python_path, mock_provider_path, "8095"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True
-        )
-        processes.append(provider_proc)
-        
-        # 2. Start Apillm Proxy Gateway (via uvicorn)
+        # Start Apillm Proxy Gateway (via uvicorn)
         print("[*] Starting Apillm Gateway on port 8090...")
         proxy_proc = subprocess.Popen(
             [python_path, "-m", "uvicorn", "apillm.proxy:app", "--host", "127.0.0.1", "--port", "8090", "--log-level", "info"],
@@ -57,17 +39,10 @@ def main():
             stderr=subprocess.STDOUT,
             text=True
         )
-        processes.append(proxy_proc)
         
         time.sleep(2)
         
-        # Check if they are still running
-        if provider_proc.poll() is not None:
-            print("[-] Error: Mock provider failed to start.")
-            stdout, _ = provider_proc.communicate()
-            print(stdout)
-            return
-            
+        # Check if running
         if proxy_proc.poll() is not None:
             print("[-] Error: Apillm Proxy Gateway failed to start.")
             stdout, _ = proxy_proc.communicate()
@@ -75,30 +50,26 @@ def main():
             return
             
         print("\n" + "="*60)
-        print(" Apillm Gateway Sentinel is fully operational!")
-        print("  - Gateway Endpoint:  http://127.0.0.1:8090/v1/chat/completions")
-        print("  - Admin Dashboard:   http://127.0.0.1:8090/dashboard")
-        print("  - Upstream Provider: http://127.0.0.1:8095/v1/chat/completions")
+        print(" Apillm Gateway is fully operational!")
+        print("  - Gateway Endpoint: http://127.0.0.1:8090/v1/chat/completions")
+        print("  - Admin Dashboard:  http://127.0.0.1:8090/dashboard")
         print("="*60 + "\n")
-        print("[*] Press Ctrl+C to terminate both servers...\n")
+        print("[*] Press Ctrl+C to terminate gateway...\n")
         
-        # Stream logs from both processes
+        # Keep running
         while True:
-            # Check if processes terminated
-            for proc in processes:
-                if proc.poll() is not None:
-                    print(f"[-] A subprocess terminated unexpectedly with code {proc.poll()}")
-                    raise KeyboardInterrupt
+            if proxy_proc.poll() is not None:
+                print(f"[-] Gateway process terminated unexpectedly with code {proxy_proc.poll()}")
+                break
             time.sleep(1)
             
     except KeyboardInterrupt:
-        print("\n[*] Shutting down Apillm servers...")
-        for proc in processes:
-            try:
-                proc.terminate()
-                proc.wait(timeout=2)
-            except Exception:
-                proc.kill()
+        print("\n[*] Shutting down Apillm Gateway...")
+        try:
+            proxy_proc.terminate()
+            proxy_proc.wait(timeout=2)
+        except Exception:
+            proxy_proc.kill()
         print("[+] Done. Goodbye!")
 
 if __name__ == "__main__":

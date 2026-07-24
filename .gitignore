@@ -1,0 +1,30 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python caching & bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Project-specific database, logs, and stats
+shieldguard_cache.db
+shieldguard_audit.jsonl
+shieldguard_stats.json
+
+# IDE config folders
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Testing logs
+*.log

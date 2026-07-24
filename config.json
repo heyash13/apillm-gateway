@@ -1,0 +1,80 @@
+{
+  "proxy": {
+    "host": "127.0.0.1",
+    "port": 8090,
+    "dashboard_enabled": true
+  },
+  "upstream": {
+    "default_provider": "mock-api",
+    "fallback_provider": "mock-api",
+    "providers": {
+      "mock-api": {
+        "url": "http://127.0.0.1:8095/v1/chat/completions",
+        "api_key": "mock-key-123"
+      },
+      "openai": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "api_key": ""
+      },
+      "broken-api": {
+        "url": "http://127.0.0.1:9999/v1/chat/completions",
+        "api_key": "broken-key"
+      }
+    }
+  },
+  "pricing": {
+    "gpt-4": { "input_cost_per_1k": 0.03, "output_cost_per_1k": 0.06 },
+    "gpt-3.5-turbo": { "input_cost_per_1k": 0.0015, "output_cost_per_1k": 0.002 },
+    "gpt-mock-llm-3.5-turbo": { "input_cost_per_1k": 0.0015, "output_cost_per_1k": 0.002 },
+    "claude-3-5-sonnet": { "input_cost_per_1k": 0.003, "output_cost_per_1k": 0.015 },
+    "default": { "input_cost_per_1k": 0.0015, "output_cost_per_1k": 0.0020 }
+  },
+  "caching": {
+    "enabled": true,
+    "type": "sqlite",
+    "database_path": "apillm_cache.db",
+    "ttl_seconds": 3600
+  },
+  "security": {
+    "redaction_enabled": true,
+    "redact_replacement": "[REDACTED_{rule_name}]",
+    "rules": [
+      {
+        "name": "EMAIL",
+        "pattern": "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+",
+        "enabled": true
+      },
+      {
+        "name": "CREDIT_CARD",
+        "pattern": "\\b(?:\\d[ -]*?){13,16}\\b",
+        "enabled": true
+      },
+      {
+        "name": "US_SSN",
+        "pattern": "\\b\\d{3}-\\d{2}-\\d{4}\\b",
+        "enabled": true
+      },
+      {
+        "name": "AWS_API_KEY",
+        "pattern": "AKIA[0-9A-Z]{16}",
+        "enabled": true
+      }
+    ]
+  },
+  "rate_limiting": {
+    "enabled": true,
+    "requests_per_minute": 60
+  },
+  "access_keys": [
+    {
+      "key": "sg-client-dev-key-xyz",
+      "description": "Developer Sandbox Key",
+      "rate_limit_override": 120
+    },
+    {
+      "key": "sg-client-prod-key-abc",
+      "description": "Production Key",
+      "rate_limit_override": 1000
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+import os
+import subprocess
+import sys
+import time
+import signal
+
+def setup_environment():
+    print("[*] Apillm Gateway: Checking Environment...")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_dir = os.path.join(base_dir, ".venv")
+    
+    # Check if virtualenv exists
+    if not os.path.exists(venv_dir):
+        print("[*] Virtual environment not found. Creating virtual environment in .venv...")
+        subprocess.check_call([sys.executable, "-m", "venv", venv_dir])
+        
+    # Determine pip path based on platform
+    if os.name == "nt":
+        pip_path = os.path.join(venv_dir, "Scripts", "pip.exe")
+        python_path = os.path.join(venv_dir, "Scripts", "python.exe")
+    else:
+        pip_path = os.path.join(venv_dir, "bin", "pip")
+        python_path = os.path.join(venv_dir, "bin", "python")
+
+    print("[*] Installing required dependencies (fastapi, uvicorn, requests)...")
+    subprocess.check_call([pip_path, "install", "--upgrade", "pip", "--index-url", "https://pypi.org/simple"])
+    subprocess.check_call([pip_path, "install", "fastapi", "uvicorn", "requests", "--index-url", "https://pypi.org/simple"])
+    print("[+] Environment successfully set up.")
+    return python_path
+
+def main():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    python_path = setup_environment()
+    
+    # Paths to files
+    mock_provider_path = os.path.join(base_dir, "mock_provider.py")
+    
+    # Run processes
+    processes = []
+    
+    try:
+        # 1. Start Upstream Mock LLM API
+        print("[*] Starting Upstream Mock LLM API on port 8095...")
+        provider_proc = subprocess.Popen(
+            [python_path, mock_provider_path, "8095"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        processes.append(provider_proc)
+        
+        # 2. Start Apillm Proxy Gateway (via uvicorn)
+        print("[*] Starting Apillm Gateway on port 8090...")
+        proxy_proc = subprocess.Popen(
+            [python_path, "-m", "uvicorn", "apillm.proxy:app", "--host", "127.0.0.1", "--port", "8090", "--log-level", "info"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        processes.append(proxy_proc)
+        
+        time.sleep(2)
+        
+        # Check if they are still running
+        if provider_proc.poll() is not None:
+            print("[-] Error: Mock provider failed to start.")
+            stdout, _ = provider_proc.communicate()
+            print(stdout)
+            return
+            
+        if proxy_proc.poll() is not None:
+            print("[-] Error: Apillm Proxy Gateway failed to start.")
+            stdout, _ = proxy_proc.communicate()
+            print(stdout)
+            return
+            
+        print("\n" + "="*60)
+        print(" Apillm Gateway Sentinel is fully operational!")
+        print("  - Gateway Endpoint:  http://127.0.0.1:8090/v1/chat/completions")
+        print("  - Admin Dashboard:   http://127.0.0.1:8090/dashboard")
+        print("  - Upstream Provider: http://127.0.0.1:8095/v1/chat/completions")
+        print("="*60 + "\n")
+        print("[*] Press Ctrl+C to terminate both servers...\n")
+        
+        # Stream logs from both processes
+        while True:
+            # Check if processes terminated
+            for proc in processes:
+                if proc.poll() is not None:
+                    print(f"[-] A subprocess terminated unexpectedly with code {proc.poll()}")
+                    raise KeyboardInterrupt
+            time.sleep(1)
+            
+    except KeyboardInterrupt:
+        print("\n[*] Shutting down Apillm servers...")
+        for proc in processes:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except Exception:
+                proc.kill()
+        print("[+] Done. Goodbye!")
+
+if __name__ == "__main__":
+    main()

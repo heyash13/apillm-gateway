@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apillm Gateway - Telemetry Control Center</title>
+    <!-- Modern Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for gorgeous analytics charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        darkBg: '#090a0f',
+                        glassBg: 'rgba(15, 18, 36, 0.7)',
+                        glassBorder: 'rgba(99, 102, 241, 0.15)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090a0f;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 50% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(15, 18, 36, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-panel:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glow-text-green {
+            text-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+        }
+        .glow-text-purple {
+            text-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 18, 36, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .pulse-active {
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen pb-12">
+
+    <!-- Top Navigation Bar -->
+    <header class="w-full py-5 px-6 border-b border-indigo-900/30 bg-darkBg/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-fuchsia-500 flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-indigo-500/20">
+                        AG
+                    </div>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-darkBg animate-ping"></div>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-darkBg"></div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">Apillm Gateway</h1>
+                    <p class="text-xs text-indigo-400 font-medium">Enterprise Security & Cost Optimization Gateway</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex flex-col text-right">
+                    <span class="text-xs text-slate-400">System Status</span>
+                    <span class="text-xs text-green-400 font-semibold flex items-center gap-1.5 justify-end">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> ACTIVE (PORT 8090)
+                    </span>
+                </div>
+                <button onclick="clearCache()" class="px-4 py-2 text-xs font-semibold text-rose-300 hover:text-white bg-rose-950/20 hover:bg-rose-600/30 border border-rose-500/30 hover:border-rose-400/50 rounded-lg transition-all duration-200 flex items-center gap-1.5">
+                    Clear Gateway Cache
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 mt-8">
+        
+        <!-- Live System Summary Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            
+            <!-- Metric 1: Total Cost Saved -->
+            <div class="glass-panel rounded-2xl p-6 relative overflow-hidden transition-all duration-300">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-green-500/5 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Cost Saved</p>
+                        <h3 id="stat-cost-saved" class="text-3xl font-extrabold mt-2 text-green-400 glow-text-green font-mono">$0.00000</h3>
+                    </div>
+                    <span class="p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </span>
+                </div>
+                <div class="mt-4 flex items-center gap-1">
+                    <span id="stat-tokens-saved" class="text-xs font-semibold text-slate-300 font-mono">0</span>
+                    <span class="text-xs text-slate-500">cached tokens intercepted</span>
+                </div>
+            </div>
+
+            <!-- Metric 2: Cache Hit Rate -->
+            <div class="glass-panel rounded-2xl p-6 relative overflow-hidden transition-all duration-300">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cache Hit Rate</p>
+                        <h3 id="stat-hit-rate" class="text-3xl font-extrabold mt-2 text-indigo-400 glow-text-purple font-mono">0.0%</h3>
+                    </div>
+                    <span class="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </span>
+                </div>
+                <div class="mt-4 flex items-center gap-1">
+                    <span id="stat-hits-ratio" class="text-xs font-semibold text-slate-300 font-mono">0 / 0</span>
+                    <span class="text-xs text-slate-500">cache hits vs total requests</span>
+                </div>
+            </div>
+
+            <!-- Metric 3: PII Incidents Redacted -->
+            <div class="glass-panel rounded-2xl p-6 relative overflow-hidden transition-all duration-300">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">PII Scrubbed Incidents</p>
+                        <h3 id="stat-pii-scrubbed" class="text-3xl font-extrabold mt-2 text-amber-400 font-mono">0</h3>
+                    </div>
+                    <span class="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </span>
+                </div>
+                <div class="mt-4 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 pulse-active"></span>
+                    <span class="text-xs text-slate-400 font-medium">Automatic Regex Filtering Enabled</span>
+                </div>
+            </div>
+
+            <!-- Metric 4: Total Cost Incurred -->
+            <div class="glass-panel rounded-2xl p-6 relative overflow-hidden transition-all duration-300">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Upstream Cost Incurred</p>
+                        <h3 id="stat-cost-spent" class="text-3xl font-extrabold mt-2 text-rose-400 font-mono">$0.00000</h3>
+                    </div>
+                    <span class="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 00-2 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </span>
+                </div>
+                <div class="mt-4 flex items-center gap-1">
+                    <span id="stat-tokens-spent" class="text-xs font-semibold text-slate-300 font-mono">0</span>
+                    <span class="text-xs text-slate-500">outbound tokens billed</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Analytical Center / Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Side: System Information & Realtime Test Suite Console -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Server Config Settings -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-4 border-b border-indigo-900/20 pb-2">Gateway Configuration</h4>
+                    <div class="space-y-3.5 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Cache Strategy:</span>
+                            <span class="font-semibold text-indigo-300 font-mono">SQLite (3600s TTL)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Upstream Host:</span>
+                            <span class="font-semibold text-slate-300 font-mono">Mock LLM API (8095)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Rate Limiting Window:</span>
+                            <span class="font-semibold text-slate-300">60s Rolling Window</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Access Key Authentication:</span>
+                            <span class="font-semibold text-indigo-400">Active (Bearer Auth)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Keys & Rate limits status -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3 border-b border-indigo-900/20 pb-2">Active API Keys</h4>
+                    <div id="api-keys-list" class="space-y-3">
+                        <!-- Key values dynamically injected here -->
+                        <div class="animate-pulse flex space-x-4">
+                            <div class="flex-1 space-y-2 py-1">
+                                <div class="h-2 bg-slate-700 rounded"></div>
+                                <div class="h-2 bg-slate-700 rounded w-5/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Gateway Test Console -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3 border-b border-indigo-900/20 pb-2">Interactive Proxy Console</h4>
+                    <p class="text-xs text-slate-400 mb-4">Send prompts directly through the Sentinel proxy gateway here to watch filters and caches trigger in real-time.</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Select Client API Key</label>
+                            <select id="console-api-key" class="w-full text-xs bg-slate-900 border border-indigo-900/40 rounded-lg p-2 text-slate-300 focus:outline-none focus:border-brand-500">
+                                <option value="sg-client-dev-key-xyz">sg-client-dev-key-xyz (Dev Sandbox)</option>
+                                <option value="sg-client-prod-key-abc">sg-client-prod-key-abc (Production Key)</option>
+                                <option value="invalid-key">invalid-key-example (Mock Invalid)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Prompt Input (contains sensitive fields)</label>
+                            <textarea id="console-prompt" rows="3" class="w-full text-xs bg-slate-900 border border-indigo-900/40 rounded-lg p-2.5 text-slate-300 focus:outline-none focus:border-brand-500 font-mono" placeholder="Send credit card: 1234-5678-1234-5678 or email admin@corporate.com here..."></textarea>
+                        </div>
+                        <button onclick="testConsolePrompt()" class="w-full py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-brand-700 rounded-lg shadow-lg hover:shadow-brand-500/20 transition-all duration-200">
+                            Execute Proxy Query
+                        </button>
+                        <div id="console-response-box" class="hidden">
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Proxy Response JSON</label>
+                            <pre id="console-response" class="w-full max-h-36 overflow-auto text-[10px] bg-black/60 rounded-lg p-2.5 text-green-400 font-mono border border-green-900/20"></pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Side: Realtime Audit Trail Log & Live Charts -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Live Telemetry Audit Trail Logs -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-indigo-900/20 pb-2.5">
+                        <h4 class="text-sm font-bold uppercase tracking-wider text-slate-300">Telemetry Audit Trail (Real-Time)</h4>
+                        <span class="flex items-center gap-1 text-[10px] font-semibold text-indigo-400 px-2 py-0.5 rounded bg-indigo-950/40 border border-indigo-800/20">
+                            Auto Refreshing
+                        </span>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-[10px] uppercase font-bold text-slate-400 border-b border-indigo-950/60 pb-2">
+                                    <th class="py-2.5 px-3">Time</th>
+                                    <th class="py-2.5 px-3">Client</th>
+                                    <th class="py-2.5 px-3">Status / Hit</th>
+                                    <th class="py-2.5 px-3">Detections</th>
+                                    <th class="py-2.5 px-3">Cost</th>
+                                    <th class="py-2.5 px-3">Prompt Excerpt</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body" class="text-xs divide-y divide-indigo-950/30">
+                                <tr>
+                                    <td colspan="6" class="py-6 text-center text-slate-400">
+                                        No recent audit logs available. Send queries to populate trail.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Live Savings Over Time Chart -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-4 border-b border-indigo-900/20 pb-2">Savings Optimization Performance</h4>
+                    <div class="relative h-60 w-full">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Custom Frontend Javascript -->
+    <script>
+        let chartInstance = null;
+
+        // Fetch running stats and update telemetry UI cards
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                // Update UI Card fields
+                document.getElementById('stat-cost-saved').innerText = `$${stats.total_cost_saved.toFixed(5)}`;
+                document.getElementById('stat-tokens-saved').innerText = stats.total_tokens_saved.toLocaleString();
+                document.getElementById('stat-pii-scrubbed').innerText = stats.pii_redacted_count;
+                document.getElementById('stat-cost-spent').innerText = `$${stats.total_cost_spent.toFixed(5)}`;
+                document.getElementById('stat-tokens-spent').innerText = stats.total_tokens_spent.toLocaleString();
+                
+                // Calc hit rate
+                const totalReqs = stats.total_requests;
+                const hits = stats.cache_hits;
+                const rate = totalReqs > 0 ? ((hits / totalReqs) * 100) : 0;
+                document.getElementById('stat-hit-rate').innerText = `${rate.toFixed(1)}%`;
+                document.getElementById('stat-hits-ratio').innerText = `${hits} hits / ${totalReqs} total`;
+
+                updateChart(stats.total_cost_saved, stats.total_cost_spent);
+            } catch (err) {
+                console.error("Failed to fetch stats:", err);
+            }
+        }
+
+        // Fetch recent audit logs and update table
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs?limit=10');
+                const logs = await response.json();
+                
+                const tableBody = document.getElementById('logs-table-body');
+                if (logs.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-6 text-center text-slate-400">
+                                No recent audit logs available. Send queries to populate trail.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+                
+                tableBody.innerHTML = logs.map(log => {
+                    const timeStr = new Date(log.timestamp * 1000).toLocaleTimeString();
+                    const statusClass = log.status_code === 200 ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20';
+                    const hitBadge = log.cache_hit 
+                        ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-md text-emerald-300 bg-emerald-950/40 border border-emerald-500/20">CACHE HIT</span>' 
+                        : '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-md text-amber-300 bg-amber-950/40 border border-amber-500/20">MISS</span>';
+                    
+                    // Format Detections
+                    let detectionsBadge = '';
+                    if (log.detections && log.detections.length > 0) {
+                        detectionsBadge = log.detections.map(d => 
+                            `<span class="px-1.5 py-0.5 text-[9px] font-bold rounded text-amber-400 bg-amber-950/30 border border-amber-600/30">${d.rule} (${d.count})</span>`
+                        ).join(' ');
+                    } else {
+                        detectionsBadge = '<span class="text-slate-500 text-[10px]">None</span>';
+                    }
+
+                    return `
+                        <tr class="hover:bg-indigo-950/10 transition-colors duration-150">
+                            <td class="py-3 px-3 font-mono font-medium text-slate-400">${timeStr}</td>
+                            <td class="py-3 px-3 text-slate-300 font-mono">${log.api_key_desc}</td>
+                            <td class="py-3 px-3">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="px-1.5 py-0.5 border text-[10px] rounded font-semibold ${statusClass}">${log.status_code}</span>
+                                    ${hitBadge}
+                                </div>
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="flex flex-wrap gap-1">${detectionsBadge}</div>
+                            </td>
+                            <td class="py-3 px-3 font-mono text-slate-300">$${log.cost.toFixed(5)}</td>
+                            <td class="py-3 px-3 text-slate-400 font-mono truncate max-w-xs">${log.prompt_snippet}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+            } catch (err) {
+                console.error("Failed to fetch logs:", err);
+            }
+        }
+
+        // Fetch configured API keys list
+        async function fetchApiKeys() {
+            try {
+                const response = await fetch('/api/keys');
+                const keys = await response.json();
+                
+                const list = document.getElementById('api-keys-list');
+                list.innerHTML = Object.entries(keys).map(([key, info]) => `
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-slate-900/60 border border-indigo-950">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-300 font-mono">${key}</p>
+                            <p class="text-[10px] text-slate-500 font-medium">${info.description}</p>
+                        </div>
+                        <span class="text-[10px] font-bold text-indigo-400 bg-indigo-950/60 px-2 py-1 rounded-md border border-indigo-800/20">
+                            ${info.rate_limit} RPM
+                        </span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Failed to fetch keys:", err);
+            }
+        }
+
+        // Clear Gateway Cache
+        async function clearCache() {
+            if (confirm("Are you sure you want to clear the entire proxy gateway prompt cache?")) {
+                try {
+                    const response = await fetch('/api/cache/clear', { method: 'POST' });
+                    const res = await response.json();
+                    alert(res.message);
+                    fetchStats();
+                    fetchLogs();
+                } catch (err) {
+                    alert("Failed to clear cache: " + err);
+                }
+            }
+        }
+
+        // Send a testing prompt from Console direct to Gateway
+        async function testConsolePrompt() {
+            const apiKey = document.getElementById('console-api-key').value;
+            const promptText = document.getElementById('console-prompt').value;
+            const resBox = document.getElementById('console-response-box');
+            const resPre = document.getElementById('console-response');
+            
+            if (!promptText.trim()) {
+                alert("Please enter a prompt.");
+                return;
+            }
+
+            try {
+                resBox.classList.remove('hidden');
+                resPre.innerText = "Sending request to gateway...";
+                
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({ prompt: promptText })
+                });
+                
+                const data = await response.json();
+                resPre.innerText = JSON.stringify(data, null, 2);
+                
+                // Immediately refresh telemetry cards & logs
+                setTimeout(() => {
+                    fetchStats();
+                    fetchLogs();
+                }, 400);
+
+            } catch (err) {
+                resPre.innerText = "Error sending query:\n" + err;
+            }
+        }
+
+        // Initialize and update the Performance Chart
+        function initChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Dollars Spent (Outbound)', 'Dollars Saved (Cache Hits)'],
+                    datasets: [{
+                        label: 'Billing Optimization ($)',
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgba(244, 63, 94, 0.65)',  // Spent (Red/Rose)
+                            'rgba(34, 197, 94, 0.65)'   // Saved (Green)
+                        ],
+                        borderColor: [
+                            'rgb(244, 63, 94)',
+                            'rgb(34, 197, 94)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(99, 102, 241, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 10 }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 10 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateChart(saved, spent) {
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [spent, saved];
+                chartInstance.update();
+            }
+        }
+
+        // Page startup
+        window.addEventListener('load', () => {
+            initChart();
+            fetchStats();
+            fetchLogs();
+            fetchApiKeys();
+            
+            // Auto refresh loops
+            setInterval(fetchStats, 3000);
+            setInterval(fetchLogs, 3000);
+        });
+    </script>
+</body>
+</html>

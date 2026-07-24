@@ -1,4 +1,4 @@
-# **Apillm Gateway** 🛡️💲
+# **Apillm Gateway**
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -8,17 +8,17 @@
 
 ---
 
-## 🌟 **Key Features**
+## **Key Features**
 
 1. **Zero Data Leakage (PII Redaction)**: Scrutinizes inbound prompt requests using configurable regex patterns to strip out sensitive data (emails, credit card numbers, US SSNs, and cloud credentials/API tokens) prior to forwarding requests upstream.
 2. **Direct Billing Optimization (SQLite Caching)**: High-speed caching saves outbound token billing on repeated prompt queries. Features dynamic whitespace/casing prompt normalization and configurable Time-to-Live (TTL) cache invalidation.
 3. **Budget Governance (Access Control & Rate Limiting)**: Validates client identities via Bearer tokens and applies rolling rate limits to prevent runaway loops or developer budget overruns.
 4. **Resilient Upstream Failover**: If the primary LLM provider fails, Apillm automatically reroutes queries to a designated fallback provider to guarantee service availability.
-5. **Stunning Telemetry Dashboard**: A dark-theme, glassmorphic visual command center to monitor live cache hit ratios, token metrics, cost savings, and redact events in real-time. Includes an interactive testing console.
+5. **Telemetry Dashboard**: A dark-theme, glassmorphic visual command center to monitor live cache hit ratios, token metrics, cost savings, and redact events in real-time. Includes an interactive testing console.
 
 ---
 
-## 🏗️ **Architecture Workflow**
+## **Architecture Workflow**
 
 ```mermaid
 flowchart TD
@@ -33,7 +33,9 @@ flowchart TD
     StoreCache --> ReturnRes[Return Response to Client]
 ```
 
-## 📊 **Telemetry Command Center UI**
+---
+
+## **Telemetry Command Center UI**
 
 Below is a live walkthrough and interface view of the Apillm Gateway admin dashboard during execution:
 
@@ -47,7 +49,7 @@ Here is a screen recording demonstrating real-time logs, security filter redacti
 
 ---
 
-## ⚙️ **Project Structure**
+## **Project Structure**
 
 ```text
 apillm-gateway/
@@ -71,7 +73,7 @@ apillm-gateway/
 
 ---
 
-## 🚀 **Getting Started**
+## **Getting Started**
 
 ### **Prerequisites**
 - **Python 3.10+** (Recommended)
@@ -102,7 +104,7 @@ To view metrics, navigate your browser to **[http://127.0.0.1:8090/dashboard](ht
 
 ---
 
-## 🧪 **Running Integration Tests**
+## **Running Integration Tests**
 
 We provide an automated verification suite to test authorization, PII filtering, caching, rate-limit headers, upstream failovers, and telemetry API:
 
@@ -113,7 +115,7 @@ We provide an automated verification suite to test authorization, PII filtering,
 
 ---
 
-## 🔧 **Configuration Guide (`config.json`)**
+## **Configuration Guide (`config.json`)**
 
 You can customize the proxy ports, providers, API keys, rate limits, and custom redact patterns directly in `config.json`:
 
@@ -159,6 +161,6 @@ You can customize the proxy ports, providers, API keys, rate limits, and custom 
 
 ---
 
-## 📜 **License**
+## **License**
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more details.
